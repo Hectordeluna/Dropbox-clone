@@ -38,62 +38,6 @@ struct stat file_stat;
 off_t offset;
 int remain_data;
 
-void sendArchivo(int index)
-{
-    int fd;
-    int sent_bytes = 0;
-
-    fd = open(archivos[index].title, O_RDONLY);
-    if (fd == -1)
-    {
-        fprintf(stderr, "Error opening file --> %s", strerror(errno));
-
-        exit(EXIT_FAILURE);
-    }
-
-    /* Get file stats */
-    if (fstat(fd, &file_stat) < 0)
-    {
-        fprintf(stderr, "Error fstat --> %s", strerror(errno));
-
-        exit(EXIT_FAILURE);
-    }
-
-    fprintf(stdout, "File Size: \n%d bytes\n", file_stat.st_size);
-
-    sprintf(file_size, "%d", file_stat.st_size);
-
-    len = send(peer_socket, archivos[index].title, sizeof(archivos[index].title) + 1, 0);
-    if (len < 0)
-    {
-        fprintf(stderr, "Error on sending greetings --> %s", strerror(errno));
-
-        exit(EXIT_FAILURE);
-    }
-
-    /* Sending file size */
-    len = send(peer_socket, file_size, sizeof(file_size), 0);
-    if (len < 0)
-    {
-        fprintf(stderr, "Error on sending greetings --> %s", strerror(errno));
-
-        exit(EXIT_FAILURE);
-    }
-
-    fprintf(stdout, "Server sent %d bytes for the size\n", len);
-
-    offset = 0;
-    remain_data = file_stat.st_size;
-    /* Sending file data */
-    while (((sendfile(fd, peer_socket, sent_bytes, &sent_bytes, NULL, 0)) == 0) && (remain_data > 0))
-    {
-        fprintf(stdout, "1. Server sent %d bytes from file's data, offset is now : %d and remaining data = %d\n", sent_bytes, offset, remain_data);
-        remain_data -= sent_bytes;
-        fprintf(stdout, "2. Server sent %d bytes from file's data, offset is now : %d and remaining data = %d\n", sent_bytes, offset, remain_data);
-    }
-    close(fd);
-}
-
 void setModifiedTime(int index)
 {
     struct stat file_stat;
@@ -122,6 +66,24 @@ int file_is_modified(char *path, time_t oldMTime)
     }
 
     return file_stat.st_mtime > oldMTime;
+}
+
+/* elimina del arreglo de archivos el archivo borrado de la carpeta*/
+void eliminarArchivo(int index) {
+    for(int i = index; i < count-1; i++) {
+        archivos[i] = archivos[i+1];
+    }
+    count--;
+}
+
+/* imprime el nombre de todos los archivos registrados
+   para comprobar que se estan rastreando de manera correcta */
+void allFiles() {
+    printf("TODOS LOS ARCHIVOS:\n");
+    for(int i = 0; i < count; i++) {
+        printf("%s\n", archivos[i].title);
+    }
+    printf("\n");
 }
 
 void readFiles()
@@ -157,17 +119,15 @@ void readFiles()
         if (i == count)
         {
             createArchivo(pDirent->d_name, i);
-            sendArchivo(i);
         }
         else if (file_is_modified(archivos[i].title, archivos[i].modifiedTime) == 1)
         {
             setModifiedTime(i);
-            sendArchivo(i);
             printf("%s - Fue cambiado\n", archivos[i].title);
         }
         else
         {
-            printf("%s\n", archivos[i].title);
+            //printf("%s\n", archivos[i].title);
         }
     }
 
@@ -175,6 +135,7 @@ void readFiles()
         if (archivos[i].using == 0)
         {
             printf("%s - BORRADO\n", archivos[i].title);
+            eliminarArchivo(i);
             continue;
         }
         else
