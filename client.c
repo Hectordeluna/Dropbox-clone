@@ -1,5 +1,4 @@
 /* Client code */
-/* TODO : Modify to meet your need */
 #include <stdio.h>
 #include <sys/types.h>
 #include <sys/socket.h>
@@ -48,8 +47,7 @@ void saveArchivo() {
     fclose(fp);
 }
 
-int main(int argc, char **argv)
-{
+void startClient() {
     chdir("Folder2");
 
     /* Zeroing remote_addr struct */
@@ -82,6 +80,54 @@ int main(int argc, char **argv)
         saveArchivo();
     }
     close(client_socket);
+}
+
+int main(void) {
+        /* Our process ID and Session ID */
+        pid_t pid, sid;
+        
+        /* Fork off the parent process */
+        pid = fork();
+        if (pid < 0) {
+                exit(EXIT_FAILURE);
+        }
+        /* If we got a good PID, then
+           we can exit the parent process. */
+        if (pid > 0) {
+                exit(EXIT_SUCCESS);
+        }
+
+        /* Change the file mode mask */
+        umask(0);
+                
+        /* Open any logs here */        
+
+        /* Create a new SID for the child process */
+        sid = setsid();
+        if (sid < 0) {
+                /* Log the failure */
+                exit(EXIT_FAILURE);
+        }
+        
+        /* Change the current working directory */
+        if ((chdir("/Users/diegomartinez/Desktop/PrograAvanzada/Mision6/Dropbox-clone")) < 0) {
+                /* Log the failure */
+                exit(EXIT_FAILURE);
+        }
+
+        /* Close out the standard file descriptors */
+        // close(STDIN_FILENO);
+        // close(STDOUT_FILENO);
+        // close(STDERR_FILENO);
+
+        /* Daemon-specific initialization goes here */
+
+        startClient();
+        while(1) {
+            sleep(10);
+        }
+
+    exit(EXIT_SUCCESS);
 
     return 0;
 }
