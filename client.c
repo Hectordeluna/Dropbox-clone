@@ -16,41 +16,36 @@
 int client_socket;
 ssize_t len;
 struct sockaddr_in remote_addr;
-char buffer[BUFSIZ];
+char buffer[1024];
 int file_size;
 FILE *received_file;
 int remain_data = 0;
 
-void saveArchivo()
-{
+void saveArchivo() {
+    FILE *fp;
+    char fname[50];
+    int received;
+    int filesize;
+    read(client_socket, fname, 50);
+    read(client_socket, &received, sizeof(received));
+    filesize = ntohl(received);
 
-    recv(client_socket, buffer, BUFSIZ, 0);
-    char *fileName = buffer;
-    fileName[strlen(fileName)] = '\0';
-    printf("%s \n", fileName);
-    received_file = fopen(fileName, "w+");
-    if (received_file == NULL)
-    {
-        fprintf(stderr, "Failed to open file --> %s\n", strerror(errno));
-
-        exit(EXIT_FAILURE);
+    printf("%s recibido\n", fname);
+    printf("filesize: %d\n", filesize);
+    fp = fopen(fname, "w");
+    int bytesRcv;
+    if(fp == NULL) {
+        printf("Error opening file\n");
+    } else {
+        while((bytesRcv = read(client_socket, buffer, filesize)) > 0) {
+            if (bytesRcv == 1) {
+                break;
+            } else {
+                fwrite(buffer, 1, bytesRcv, fp);
+            }
+        }
     }
-    /* Receiving file size */
-    recv(client_socket, buffer, BUFSIZ, 0);
-    file_size = atoi(buffer);
-    //fprintf(stdout, "\nFile size : %d\n", file_size);
-
-    remain_data = file_size;
-
-    while ((remain_data > 0) && ((len = recv(client_socket, buffer, BUFSIZ, 0)) > 0))
-    {
-        fwrite(buffer, sizeof(char), len, received_file);
-        remain_data -= len;
-        fprintf(stdout, "Receive %d bytes and we hope :- %d bytes\n", len, remain_data);
-    }
-    len = 0;
-    fclose(received_file);
-    bzero(buffer, sizeof(buffer));
+    fclose(fp);
 }
 
 int main(int argc, char **argv)

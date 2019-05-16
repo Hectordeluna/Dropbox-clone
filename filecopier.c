@@ -86,6 +86,40 @@ void allFiles() {
     printf("\n");
 }
 
+void sendArchivo(int i) {
+    write(peer_socket, archivos[i].title, 50);
+    FILE *fp = fopen(archivos[i].title, "rb");
+    fseek(fp, 0L, SEEK_END);
+    int filesize = ftell(fp);
+    rewind(fp);
+    printf("Filesize: %d\n", filesize);
+
+    int data = htonl(filesize);
+    write(peer_socket, &data, sizeof(data));
+
+    if (fp == NULL) {
+        printf("File open error");
+    } else {
+        while(1) {
+            unsigned char buff[1024] = {0};
+            int n = fread(buff, 1, filesize, fp);
+            if (n > 0) {
+                write(peer_socket, buff, n);
+            } 
+            if (n < filesize) {
+                if (feof(fp)) {
+                    write(peer_socket, "-", 1);
+                }
+                if (ferror(fp)) {
+                    printf("Error reading\n");
+                }
+                break;
+            }
+        }
+    }
+    fclose(fp);
+}
+
 void readFiles()
 {
     int len;
@@ -124,6 +158,7 @@ void readFiles()
         {
             setModifiedTime(i);
             printf("%s - Fue cambiado\n", archivos[i].title);
+            sendArchivo(i);
         }
         else
         {
