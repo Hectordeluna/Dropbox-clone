@@ -170,6 +170,8 @@ void readFiles()
         if (archivos[i].using == 0)
         {
             printf("%s - BORRADO\n", archivos[i].title);
+            write(peer_socket, "eliminado", 50);
+            write(peer_socket, archivos[i].title, 50);
             eliminarArchivo(i);
             continue;
         }

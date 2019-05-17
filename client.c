@@ -1,4 +1,3 @@
-/* Client code */
 #include <stdio.h>
 #include <sys/types.h>
 #include <sys/socket.h>
@@ -26,6 +25,12 @@ void saveArchivo() {
     int received;
     int filesize;
     read(client_socket, fname, 50);
+    if(strcmp(fname, "eliminado") == 0) {
+        read(client_socket, fname, 50);
+        printf("%s\n", fname);
+        remove(fname);
+        return;
+    }
     read(client_socket, &received, sizeof(received));
     filesize = ntohl(received);
 
